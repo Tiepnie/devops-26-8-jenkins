@@ -59,6 +59,9 @@ FAIL=0
 cleanup() {
   echo ""
   echo "--- dọn dẹp ---"
+  if [[ -f /.dockerenv ]]; then
+    docker network disconnect "${PROJECT}_default" $(hostname) >/dev/null 2>&1 || true
+  fi
   $COMPOSE down -v >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
@@ -81,6 +84,7 @@ $COMPOSE down -v >/dev/null 2>&1 || true
 $COMPOSE up $UP_ARGS
 
 if [[ -f /.dockerenv ]]; then
+  docker network connect "${PROJECT}_default" $(hostname) >/dev/null 2>&1 || true
   WEB_CONTAINER_ID=$($COMPOSE ps -q web 2>/dev/null || true)
   if [[ -n "$WEB_CONTAINER_ID" ]]; then
     CONTAINER_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$WEB_CONTAINER_ID" 2>/dev/null || true)
