@@ -80,8 +80,18 @@ echo "=== Dựng stack (cổng $WEB_PORT) ==="
 $COMPOSE down -v >/dev/null 2>&1 || true
 $COMPOSE up $UP_ARGS
 
+if [[ -f /.dockerenv ]]; then
+  WEB_CONTAINER_ID=$($COMPOSE ps -q web 2>/dev/null || true)
+  if [[ -n "$WEB_CONTAINER_ID" ]]; then
+    CONTAINER_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$WEB_CONTAINER_ID" 2>/dev/null || true)
+    if [[ -n "$CONTAINER_IP" ]]; then
+      BASE="http://${CONTAINER_IP}:3000"
+    fi
+  fi
+fi
+
 echo ""
-echo "=== Chờ web sẵn sàng ==="
+echo "=== Chờ web sẵn sàng tại: $BASE ==="
 for i in $(seq 1 30); do
   if curl -sf "$BASE/api/health" >/dev/null 2>&1; then
     echo "  sẵn sàng sau ${i}s"
