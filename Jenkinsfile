@@ -226,20 +226,29 @@ pipeline {
     stage('6. Kiểm tra sau deploy') {
       steps {
         echo "=== Xác nhận app đang chạy thật ==="
-        // Jenkins ở trong container, gọi ra host qua host.docker.internal
         sh """
-          BASE=http://host.docker.internal:${DEPLOY_WEB_PORT}
+          docker network connect ${DEPLOY_PROJECT}_default \$(hostname) 2>/dev/null || true
+          WEB_CONTAINER_ID=\$(docker compose -p ${DEPLOY_PROJECT} ps -q web 2>/dev/null || true)
+          CONTAINER_IP=\$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "\$WEB_CONTAINER_ID" 2>/dev/null || true)
+          if [ -n "\$CONTAINER_IP" ]; then
+            BASE=http://\${CONTAINER_IP}:3000
+          else
+            BASE=http://host.docker.internal:${DEPLOY_WEB_PORT}
+          fi
+          echo "Kiểm tra API qua: \$BASE"
           for i in \$(seq 1 30); do
             if curl -sf \$BASE/api/health >/dev/null 2>&1; then
               echo "App sẵn sàng sau \${i}s"
               curl -s \$BASE/api/health; echo ""
               curl -s \$BASE/api/define/computer; echo ""
+              docker network disconnect ${DEPLOY_PROJECT}_default \$(hostname) 2>/dev/null || true
               exit 0
             fi
             sleep 1
           done
           echo "TIMEOUT - app không phản hồi sau 30s"
           docker compose -p ${DEPLOY_PROJECT} logs web
+          docker network disconnect ${DEPLOY_PROJECT}_default \$(hostname) 2>/dev/null || true
           exit 1
         """
       }
