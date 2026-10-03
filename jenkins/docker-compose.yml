@@ -36,6 +36,9 @@ services:
       # KHÔNG dùng cách này cho Jenkins thật ngoài production.
       JAVA_OPTS: "-Djenkins.install.runSetupWizard=false"
 
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
     restart: unless-stopped
 
 volumes:

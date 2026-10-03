@@ -33,10 +33,10 @@ COMPOSE="docker compose -p $PROJECT"
 # Lý do: container "web" mở cổng ra HOST, không phải ra container Jenkins.
 # Đứng trong Jenkins mà gọi localhost là gọi chính nó -> không có gì trả lời.
 # Dấu hiệu nhận biết môi trường container: có file /.dockerenv.
-if [[ -f /.dockerenv ]] && getent hosts host.docker.internal >/dev/null 2>&1; then
-  HOST_ADDR="host.docker.internal"
+if [[ -f /.dockerenv ]]; then
+  HOST_ADDR="${SMOKE_HOST:-host.docker.internal}"
 else
-  HOST_ADDR="localhost"
+  HOST_ADDR="${SMOKE_HOST:-localhost}"
 fi
 BASE="http://${HOST_ADDR}:${WEB_PORT}"
 echo "=== Gọi API qua: $BASE"
